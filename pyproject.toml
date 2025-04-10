@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyfxtran"
+dynamic = ["version"]
+dependencies = []
+authors = [
+  { name = "Sébastien Riette", email = "sebastien.riette@meteo.fr" },
+]
+description = "A light wrapper around fxtran"
+readme = "README.md"
+requires-python = ">= 3.10"
+license = {text = "CECILL-C"}
+
+[project.scripts]
+pyfxtran = "pyfxtran:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "pyfxtran.__version__"}
