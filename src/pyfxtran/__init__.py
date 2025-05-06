@@ -8,9 +8,10 @@ from pathlib import Path
 import tempfile
 import subprocess
 import os
+import shutil
 import argparse
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 FXTRAN_VERSION = 'd89af8c67cf2e134ed43b5e689d639a9e07215ff'
 FXTRAN_REPO = 'https://github.com/pmarguinaud/fxtran.git'
@@ -56,7 +57,7 @@ def run(filename, options=None):
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
             if not os.path.exists(os.path.join(tempdir, 'bin/fxtran_stat')):
                 raise RuntimeError('fxtran compilation has failed')
-            os.rename(os.path.join(tempdir, 'bin/fxtran_stat'), parser)
+            shutil.move(os.path.join(tempdir, 'bin/fxtran_stat'), parser)
 
     # Execution
     return subprocess.run([parser, filename] + ([] if options is None else options),
