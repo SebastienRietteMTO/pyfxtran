@@ -17,7 +17,7 @@ FXTRAN_VERSION = 'd89af8c67cf2e134ed43b5e689d639a9e07215ff'
 FXTRAN_REPO = 'https://github.com/pmarguinaud/fxtran.git'
 
 
-def run(filename, options=None):
+def run(filename, options=None, verbose=False):
     """
     Main function: installs fxtran if not available, runs it and return the result
     :param filename: name of the FORTRAN file
@@ -25,6 +25,7 @@ def run(filename, options=None):
     """
 
     parser = os.path.join(Path.home(), f'.fxtran_{FXTRAN_VERSION}')
+    out_stream = subprocess.STDOUT if verbose else subprocess.DEVNULL
 
     # Installation
     if not os.path.exists(parser):
@@ -35,11 +36,11 @@ def run(filename, options=None):
             # get the repository, and checkout the right version
             if fxtran_for_pyfxtran is None:
                 subprocess.run(['git', 'clone', f'{FXTRAN_REPO}', fxtran_dir], cwd=tempdir,
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                               stdout=out_stream, stderr=out_stream, check=True)
             else:
                 os.symlink(fxtran_for_pyfxtran, fxtran_dir)
             subprocess.run(['git', 'checkout', f'{FXTRAN_VERSION}'], cwd=fxtran_dir,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                           stdout=out_stream, stderr=out_stream, check=True)
 
             # makefile modification (static version building and cleaning)
             with open(os.path.join(fxtran_dir, 'src/makefile'), 'r', encoding='UTF-8') as makefile:
@@ -66,12 +67,12 @@ def run(filename, options=None):
             if fxtran_for_pyfxtran is not None:
                 # clean reports error
                 subprocess.run(['make', 'clean'], cwd=fxtran_dir,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                           stdout=out_stream, stderr=out_stream, check=False)
 
             # Compilation is known to produce an error due to perl
             # We do not check status but only the existence of the executable
             subprocess.run(['make', 'all'], cwd=fxtran_dir,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                           stdout=out_stream, stderr=out_stream, check=False)
             if not os.path.exists(os.path.join(fxtran_dir, 'bin/fxtran_stat')):
                 raise RuntimeError('fxtran compilation has failed')
             shutil.move(os.path.join(fxtran_dir, 'bin/fxtran_stat'), parser)
@@ -88,5 +89,6 @@ def main():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', help='FORTRAN file name')
+    parser.add_argument('--verbose', help='Display details of the fxtran installation', action='store_true')
     args = parser.parse_args()
-    print(run(args.filename, ['-o', '-']))
+    print(run(args.filename, ['-o', '-'], args.verbose))
