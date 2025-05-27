@@ -25,7 +25,7 @@ def run(filename, options=None, verbose=False):
     """
 
     parser = os.path.join(Path.home(), f'.fxtran_{FXTRAN_VERSION}')
-    out_stream = subprocess.STDOUT if verbose else subprocess.DEVNULL
+    out_stream = None if verbose else subprocess.DEVNULL
 
     # Installation
     if not os.path.exists(parser):
