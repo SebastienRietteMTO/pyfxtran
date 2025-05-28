@@ -2,3 +2,6 @@ src/pyfxtran.egg-info
 src/pyfxtran/__pycache__
 *.swp
 dist
+wheelhouse
+src/pyfxtran/bin/fxtran
+build

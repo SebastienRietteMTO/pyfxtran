@@ -19,3 +19,6 @@ pyfxtran = "pyfxtran:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "pyfxtran.__version__"}
+
+[tool.setuptools.package-data]
+pyfxtran = ['bin/fxtran']

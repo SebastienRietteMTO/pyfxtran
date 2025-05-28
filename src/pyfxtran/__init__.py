@@ -11,9 +11,9 @@ import os
 import shutil
 import argparse
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
-FXTRAN_VERSION = 'd89af8c67cf2e134ed43b5e689d639a9e07215ff'
+FXTRAN_VERSION = 'ee52a8a8241d0ba2939f216fb86d524d5535288f'
 FXTRAN_REPO = 'https://github.com/pmarguinaud/fxtran.git'
 
 
@@ -24,58 +24,42 @@ def run(filename, options=None, verbose=False):
     :param options: options (dict) to give to fxtran
     """
 
-    parser = os.path.join(Path.home(), f'.fxtran_{FXTRAN_VERSION}')
-    out_stream = None if verbose else subprocess.DEVNULL
+    # First we check if an executable is included in the package
+    parser = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bin', 'fxtran')
 
-    # Installation
     if not os.path.exists(parser):
-        with tempfile.TemporaryDirectory() as tempdir:
-            fxtran_for_pyfxtran = os.environ.get('FXTRAN_FOR_PYFXTRAN', None)
-            fxtran_dir = os.path.join(tempdir, 'fxtran')
+        # If not included, we check if we already compiled it
+        parser = os.path.join(Path.home(), f'.fxtran_{FXTRAN_VERSION}')
 
-            # get the repository, and checkout the right version
-            if fxtran_for_pyfxtran is None:
-                subprocess.run(['git', 'clone', f'{FXTRAN_REPO}', fxtran_dir], cwd=tempdir,
+        if not os.path.exists(parser):
+            # Executable not found, we build it
+            out_stream = None if verbose else subprocess.DEVNULL
+            with tempfile.TemporaryDirectory() as tempdir:
+                fxtran_for_pyfxtran = os.environ.get('FXTRAN_FOR_PYFXTRAN', None)
+                fxtran_dir = os.path.join(tempdir, 'fxtran')
+
+                # get the repository, and checkout the right version
+                if fxtran_for_pyfxtran is None:
+                    subprocess.run(['git', 'clone', f'{FXTRAN_REPO}', fxtran_dir], cwd=tempdir,
+                                   stdout=out_stream, stderr=out_stream, check=True)
+                else:
+                    os.symlink(fxtran_for_pyfxtran, fxtran_dir)
+                subprocess.run(['git', 'checkout', f'{FXTRAN_VERSION}'], cwd=fxtran_dir,
                                stdout=out_stream, stderr=out_stream, check=True)
-            else:
-                os.symlink(fxtran_for_pyfxtran, fxtran_dir)
-            subprocess.run(['git', 'checkout', f'{FXTRAN_VERSION}'], cwd=fxtran_dir,
-                           stdout=out_stream, stderr=out_stream, check=True)
 
-            # makefile modification (static version building and cleaning)
-            with open(os.path.join(fxtran_dir, 'src/makefile'), 'r', encoding='UTF-8') as makefile:
-                content = makefile.readlines()
-            for i, line in enumerate(content):
-                if line.startswith('all: '):
-                    line = line.replace('\n', ' ') + '$(TOP)/bin/fxtran_stat\n'
-                    content[i] = line
-                elif line.startswith('clean:'):
-                    content[i + 1] += '\t\\rm -f $(TOP)/bin/fxtran_stat $(TOP)/lib/libfxtran_stat.a\n'
-            content += ['\n',
-                        '$(TOP)/bin/fxtran_stat: FXTRAN_ALPHA.h fxtran.o $(TOP)/lib/libfxtran_stat.a\n',
-                        '	@mkdir -p ../bin\n',
-                        '	$(CC) -o $(TOP)/bin/fxtran_stat fxtran.o $(RPATH) -L$(TOP)/lib -lfxtran_stat $(LDFLAGS)\n',
-                        '\n',
-                        '$(TOP)/lib/libfxtran_stat.a: $(OBJ)\n',
-                        '	cd cpp && make\n',
-                        '	@mkdir -p ../lib\n',
-                        '	ar -rs $(TOP)/lib/libfxtran_stat.a $(OBJ) cpp/*.o\n']
-            with open(os.path.join(fxtran_dir, 'src/makefile'), 'w', encoding='UTF-8') as makefile:
-                makefile.writelines(content)
+                # cleaning, if needed
+                if fxtran_for_pyfxtran is not None:
+                    # clean reports error
+                    subprocess.run(['make', 'clean'], cwd=fxtran_dir,
+                                   stdout=out_stream, stderr=out_stream, check=False)
 
-            # cleaning, if needed
-            if fxtran_for_pyfxtran is not None:
-                # clean reports error
-                subprocess.run(['make', 'clean'], cwd=fxtran_dir,
-                           stdout=out_stream, stderr=out_stream, check=False)
-
-            # Compilation is known to produce an error due to perl
-            # We do not check status but only the existence of the executable
-            subprocess.run(['make', 'all'], cwd=fxtran_dir,
-                           stdout=out_stream, stderr=out_stream, check=False)
-            if not os.path.exists(os.path.join(fxtran_dir, 'bin/fxtran_stat')):
-                raise RuntimeError('fxtran compilation has failed')
-            shutil.move(os.path.join(fxtran_dir, 'bin/fxtran_stat'), parser)
+                # Compilation is known to produce an error due to perl
+                # We do not check status but only the existence of the executable
+                subprocess.run(['make', 'STATIC=1', 'all'], cwd=fxtran_dir,
+                               stdout=out_stream, stderr=out_stream, check=False)
+                if not os.path.exists(os.path.join(fxtran_dir, 'bin/fxtran')):
+                    raise RuntimeError('fxtran compilation has failed')
+                shutil.move(os.path.join(fxtran_dir, 'bin/fxtran'), parser)
 
     # Execution
     return subprocess.run([parser, filename] + ([] if options is None else options),
@@ -89,6 +73,7 @@ def main():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', help='FORTRAN file name')
-    parser.add_argument('--verbose', help='Display details of the fxtran installation', action='store_true')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Display details of the fxtran installation')
     args = parser.parse_args()
     print(run(args.filename, ['-o', '-'], args.verbose))
