@@ -6,10 +6,19 @@
 
 set -e
 
+VERSION=$(python3 <(cat src/pyfxtran/__init__.py; echo 'print(__version__)'))
+
 # Temporary directory
 export TMP_LOC=$(mktemp -d)
 trap "\rm -rf $TMP_LOC" EXIT
 ROOTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Suppress pre-existing fxtran
+rm -f $ROOTDIR/src/pyfxtran/bin/fxtran
+
+# Build a wheel without the fxtran binary
+cd $ROOTDIR
+python3 -m build --sdist --wheel -o wheelhouse/
 
 # Get fxtran
 FXTRAN_VERSION=$(python3 <(cat src/pyfxtran/__init__.py; echo 'print(FXTRAN_VERSION)'))
@@ -40,6 +49,8 @@ cp $TMP_LOC/fxtran/bin/fxtran $ROOTDIR/src/pyfxtran/bin/fxtran
 
 # Build the wheel
 cd $ROOTDIR
-python3 -m build --sdist --wheel
-VERSION=$(python3 <(cat src/pyfxtran/__init__.py; echo 'print(__version__)'))
+python3 -m build --wheel
 python3 -m auditwheel repair dist/pyfxtran-${VERSION}-py3-none-any.whl
+
+# Cleaning
+rm -rf dist
