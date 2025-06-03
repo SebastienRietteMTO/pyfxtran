@@ -12,7 +12,7 @@ authors = [
 description = "A light wrapper around fxtran"
 readme = "README.md"
 requires-python = ">= 3.10"
-license = {text = "CECILL-C"}
+license = "CECILL-C"
 
 [project.scripts]
 pyfxtran = "pyfxtran:main"
@@ -21,4 +21,5 @@ pyfxtran = "pyfxtran:main"
 version = {attr = "pyfxtran.__version__"}
 
 [tool.setuptools.package-data]
-pyfxtran = ['bin/fxtran']
+pyfxtran = ['bin/fxtran',
+            '_get_make_options.sh']

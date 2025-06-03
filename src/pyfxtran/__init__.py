@@ -13,7 +13,7 @@ import argparse
 
 __version__ = '0.1.3'
 
-FXTRAN_VERSION = 'ee52a8a8241d0ba2939f216fb86d524d5535288f'
+FXTRAN_VERSION = 'f0d177609a768ac01d1cebdbf362fc5ee394ae74'
 FXTRAN_REPO = 'https://github.com/pmarguinaud/fxtran.git'
 
 
@@ -23,9 +23,10 @@ def run(filename, options=None, verbose=False):
     :param filename: name of the FORTRAN file
     :param options: options (dict) to give to fxtran
     """
+    package_dir = os.path.dirname(os.path.realpath(__file__))
 
     # First we check if an executable is included in the package
-    parser = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bin', 'fxtran')
+    parser = os.path.join(package_dir, 'bin', 'fxtran')
 
     if not os.path.exists(parser):
         # If not included, we check if we already compiled it
@@ -55,7 +56,11 @@ def run(filename, options=None, verbose=False):
 
                 # Compilation is known to produce an error due to perl
                 # We do not check status but only the existence of the executable
-                subprocess.run(['make', 'STATIC=1', 'all'], cwd=fxtran_dir,
+                make_options = subprocess.run(
+                    ['bash', os.path.join(package_dir, '_get_make_options.sh')],
+                    stdout=subprocess.PIPE, check=True).stdout.split(b' ')
+                print(make_options)
+                subprocess.run(['make'] + make_options + ['all'], cwd=fxtran_dir,
                                stdout=out_stream, stderr=out_stream, check=False)
                 if not os.path.exists(os.path.join(fxtran_dir, 'bin/fxtran')):
                     raise RuntimeError('fxtran compilation has failed')

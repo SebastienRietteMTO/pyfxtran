@@ -5,3 +5,4 @@ dist
 wheelhouse
 src/pyfxtran/bin/fxtran
 build
+src/pyfxtran/fxtran
