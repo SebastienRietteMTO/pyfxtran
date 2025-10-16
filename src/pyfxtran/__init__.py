@@ -11,7 +11,7 @@ import os
 import shutil
 import argparse
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 FXTRAN_VERSION = '7b1686a286b885cf52369326e333ec783b0eeb3d'
 FXTRAN_REPO = 'https://github.com/pmarguinaud/fxtran.git'
